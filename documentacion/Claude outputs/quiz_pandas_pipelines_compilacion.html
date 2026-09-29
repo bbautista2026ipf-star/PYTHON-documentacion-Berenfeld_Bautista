@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Especializado - Pandas, Pipelines, Compilación</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .pass-threshold {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4ade80;
+            transition: width 0.3s ease;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .start-screen, .quiz-screen, .results-screen {
+            display: none;
+        }
+
+        .start-screen.active, .quiz-screen.active, .results-screen.active {
+            display: block;
+        }
+
+        .start-screen {
+            text-align: center;
+        }
+
+        .start-screen h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .start-screen p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .start-screen .topics {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .start-screen .topics h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .start-screen .topics ul {
+            list-style: none;
+            columns: 2;
+        }
+
+        .start-screen .topics li {
+            padding: 8px 0;
+            color: #555;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .start-screen .topics li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .question-container {
+            margin-bottom: 30px;
+        }
+
+        .question-number {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .question-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .code-block {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            color: #333;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            user-select: none;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f9f7ff;
+        }
+
+        .option input[type="radio"] {
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .option label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #f9f7ff;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results-screen h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .score-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .score-number {
+            font-size: 64px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .score-text {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .results-breakdown {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .breakdown-label {
+            color: #555;
+            font-weight: 500;
+        }
+
+        .breakdown-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .feedback {
+            background: #f0fdf4;
+            border-left: 4px solid #4ade80;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            color: #166534;
+            font-weight: 600;
+        }
+
+        .feedback.success {
+            background: #f0fdf4;
+            border-left-color: #4ade80;
+            color: #166534;
+        }
+
+        .feedback.warning {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .feedback.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .category-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 600px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .start-screen .topics ul {
+                columns: 1;
+            }
+
+            .navigation {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <h1>Quiz Especializado</h1>
+            <p>Pandas, Pipelines de Datos, Compilación de Python</p>
+            <div class="pass-threshold">✓ Aprobación: 70% para descansar</div>
+        </div>
+
+        <div class="content">
+            <!-- Pantalla inicial -->
+            <div class="start-screen active">
+                <h2>Quiz Especializado</h2>
+                <p>Evaluación técnica sobre <strong>50 preguntas</strong> en estos dominios:</p>
+
+                <div class="topics">
+                    <h3>Temas cubiertos:</h3>
+                    <ul>
+                        <li>Métodos de Pandas (apply, map, merge, groupby)</li>
+                        <li>Transformación de datos (pivot, stack, unstack)</li>
+                        <li>Operaciones de índices y selección</li>
+                        <li>ETL y pipelines de datos</li>
+                        <li>Extracción, transformación y carga</li>
+                        <li>Validación y calidad de datos</li>
+                        <li>Compilación e interpretación de Python</li>
+                        <li>Bytecode y CPython</li>
+                        <li>Optimización y desempeño</li>
+                    </ul>
+                </div>
+
+                <p><strong>Aprobación:</strong> 70% (35/50) para ir a descansar</p>
+                <p><strong>Duración estimada:</strong> 25-35 minutos</p>
+
+                <button class="btn" onclick="iniciarQuiz()">Comenzar Quiz</button>
+            </div>
+
+            <!-- Pantalla del quiz -->
+            <div class="quiz-screen">
+                <div class="category-badge" id="categoryBadge"></div>
+                <div class="question-container">
+                    <div class="question-number" id="questionNumber"></div>
+                    <div class="question-text" id="questionText"></div>
+                    <div id="codeBlock"></div>
+                    <div class="options" id="optionsContainer"></div>
+                </div>
+
+                <div class="navigation">
+                    <button class="btn btn-secondary" id="prevBtn" onclick="preguntaAnterior()" disabled>← Anterior</button>
+                    <button class="btn" id="nextBtn" onclick="siguientePregunta()">Siguiente →</button>
+                </div>
+            </div>
+
+            <!-- Pantalla de resultados -->
+            <div class="results-screen">
+                <h2>Resultados Finales</h2>
+
+                <div class="score-box">
+                    <div class="score-number" id="finalScore"></div>
+                    <div class="score-text">Puntuación</div>
+                </div>
+
+                <div class="feedback" id="resultFeedback"></div>
+
+                <div class="results-breakdown">
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Respuestas correctas:</span>
+                        <span class="breakdown-value" id="correctCount"></span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Respuestas incorrectas:</span>
+                        <span class="breakdown-value" id="incorrectCount"></span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Preguntas sin responder:</span>
+                        <span class="breakdown-value" id="unansweredCount"></span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Total de preguntas:</span>
+                        <span class="breakdown-value" id="totalQuestions"></span>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" onclick="reiniciarQuiz()">Reintentar Quiz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const preguntas = [
+            // MÉTODOS DE PANDAS - APPLY Y MAP
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la diferencia principal entre apply() y map() en Pandas?",
+                codigo: "",
+                opciones: ["apply() solo funciona con Series, map() con DataFrames", "map() es para Series, apply() es más versátil para Series y DataFrames", "No hay diferencia", "apply() es más rápido que map()"],
+                correcta: 1,
+                explicacion: "map() se usa para Series, apply() es más flexible y se usa en Series y DataFrames."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué retorna df.apply(lambda x: x.sum()) en un DataFrame?",
+                codigo: "df = pd.DataFrame({'A': [1,2,3], 'B': [4,5,6]})\ndf.apply(lambda x: x.sum())",
+                opciones: ["Un DataFrame con todos ceros", "Una Series con la suma de cada columna", "Un DataFrame con las sumas", "Un valor escalar"],
+                correcta: 1,
+                explicacion: "apply() retorna una Series con la suma de cada columna por defecto."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el parámetro axis en apply()?",
+                opciones: ["axis=0 aplica por columnas, axis=1 por filas", "axis=0 aplica por filas, axis=1 por columnas", "axis no existe en apply()", "axis solo funciona en DataFrames numéricos"],
+                correcta: 0,
+                explicacion: "axis=0 opera sobre columnas (eje vertical), axis=1 sobre filas (eje horizontal)."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué método se usa para aplicar una función a cada elemento de una Series?",
+                opciones: ["apply()", "map()", "transform()", "lambda()"],
+                correcta: 1,
+                explicacion: "map() aplica una función a cada elemento de una Series."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la diferencia entre transform() y apply()?",
+                opciones: ["transform() retorna el mismo tamaño, apply() puede cambiar", "apply() es más rápido", "transform() solo funciona con agregaciones", "No hay diferencia"],
+                correcta: 0,
+                explicacion: "transform() mantiene el mismo índice y tamaño, apply() puede variar."
+            },
+
+            // MERGE Y JOIN
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el parámetro 'how' en pd.merge()?",
+                opciones: ["Define el número de filas", "Define el tipo de unión (inner, outer, left, right)", "Define el orden de las columnas", "Define la compresión de datos"],
+                correcta: 1,
+                explicacion: "how='inner'|'outer'|'left'|'right' define cómo se unen los DataFrames."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la diferencia entre merge() y join()?",
+                opciones: ["merge() usa columnas, join() usa índices", "No hay diferencia", "merge() es más rápido", "join() solo funciona con Series"],
+                correcta: 0,
+                explicacion: "merge() une por columnas (on=), join() une por índices por defecto."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué retorna pd.merge(df1, df2, how='inner')?",
+                opciones: ["Solo filas que coinciden en ambos DataFrames", "Todas las filas de df1", "Todas las filas de df2", "Unión de todas las filas"],
+                correcta: 0,
+                explicacion: "how='inner' retorna solo las filas que existen en ambos DataFrames."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el equivalente SQL de un merge with how='left'?",
+                opciones: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"],
+                correcta: 1,
+                explicacion: "how='left' es equivalente a LEFT JOIN en SQL."
+            },
+
+            // GROUPBY Y AGGREGACIÓN
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué retorna df.groupby('categoria')?",
+                opciones: ["Un DataFrame agrupado", "Un objeto GroupBy", "Una Series con los grupos", "Un diccionario"],
+                correcta: 1,
+                explicacion: "groupby() retorna un objeto GroupBy que permite agregaciones posteriormente."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el método para aplicar múltiples agregaciones en groupby?",
+                codigo: "df.groupby('grupo')[['col1', 'col2']].agg({'col1': 'sum', 'col2': 'mean'})",
+                opciones: ["apply()", "agg()", "aggregate()", "Ambas agg() y aggregate()"],
+                correcta: 3,
+                explicacion: "agg() y aggregate() son sinónimos y permiten múltiples agregaciones."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué hace df.groupby('A').size()?",
+                opciones: ["Retorna el tamaño en bytes", "Retorna la cantidad de filas por grupo", "Retorna el tamaño del DataFrame", "No existe este método"],
+                correcta: 1,
+                explicacion: "size() retorna el número de elementos (filas) en cada grupo."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la diferencia entre size() y count() en groupby?",
+                opciones: ["size() cuenta NaN, count() no", "count() incluye NaN, size() no", "No hay diferencia", "size() es para Series, count() para DataFrames"],
+                correcta: 0,
+                explicacion: "size() cuenta todas las filas incluidos NaN, count() excluye NaN."
+            },
+
+            // ÍNDICES Y SELECCIÓN
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la diferencia entre .loc[] y .iloc[]?",
+                opciones: [".loc[] usa posición, .iloc[] usa etiqueta", ".loc[] usa etiqueta, .iloc[] usa posición", "No hay diferencia", "Ambos usan etiquetas"],
+                correcta: 1,
+                explicacion: ".loc[] selecciona por etiqueta/índice, .iloc[] por posición numérica."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué retorna df[df['columna'] > 10]?",
+                opciones: ["Un error", "Las filas donde la columna es mayor a 10", "La columna completa", "Un DataFrame vacío"],
+                correcta: 1,
+                explicacion: "Retorna las filas que cumplen la condición usando filtrado booleano."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el método para resetear el índice de un DataFrame?",
+                opciones: ["reset_index()", "set_index()", "drop_index()", "reindex()"],
+                correcta: 0,
+                explicacion: "reset_index() convierte el índice en una columna y crea un nuevo índice."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué hace df.set_index('columna')?",
+                opciones: ["Elimina la columna", "Establece la columna como índice", "Crea una nueva columna", "Ordena por la columna"],
+                correcta: 1,
+                explicacion: "set_index() establece la columna especificada como índice del DataFrame."
+            },
+
+            // PIVOT Y RESHAPE
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es la función de pd.pivot_table()?",
+                opciones: ["Ordena datos", "Transforma datos de formato largo a ancho con agregación", "Elimina duplicados", "Crea índices"],
+                correcta: 1,
+                explicacion: "pivot_table() reorganiza datos y aplica agregaciones simultáneamente."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué es el stacking en Pandas?",
+                opciones: ["Apilar filas en la memoria", "Transformar columnas en filas (formato largo)", "Agrupar datos", "Ordenar datos"],
+                correcta: 1,
+                explicacion: "stack() transforma el DataFrame de formato ancho a largo (pivotea columnas a filas)."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Cuál es el inverso de stack()?",
+                opciones: ["unstack()", "restack()", "reverse()", "transpose()"],
+                correcta: 0,
+                explicacion: "unstack() es el inverso de stack(), transforma de formato largo a ancho."
+            },
+            {
+                categoria: "Métodos Pandas",
+                pregunta: "¿Qué retorna df.melt()?",
+                opciones: ["Un DataFrame eliminado", "Un DataFrame en formato largo (unpivoted)", "El promedio de columnas", "Un DataFrame transpuesto"],
+                correcta: 1,
+                explicacion: "melt() transforma un DataFrame de formato ancho a formato largo."
+            },
+
+            // PIPELINES Y ETL
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Cuáles son las tres fases del ETL?",
+                opciones: ["Extract, Extend, Load", "Extract, Transform, Load", "Expand, Transpose, Link", "Execute, Transfer, Liberate"],
+                correcta: 1,
+                explicacion: "ETL = Extract (extraer), Transform (transformar), Load (cargar)."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿En qué fase del pipeline se limpian valores duplicados?",
+                opciones: ["Extract", "Transform", "Load", "Validate"],
+                correcta: 1,
+                explicacion: "En Transform se limpian, validan y estandarizan los datos."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Cuál es el propósito de la fase Extract?",
+                opciones: ["Limpiar datos", "Obtener datos de fuentes (CSV, BD, APIs)", "Cargar datos al destino", "Validar calidad"],
+                correcta: 1,
+                explicacion: "Extract obtiene datos de archivos, bases de datos, APIs, etc."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Qué son las transformaciones en un pipeline?",
+                opciones: ["Cambios de formato de archivo", "Operaciones de limpieza, validación y restructuración de datos", "Copia de datos", "Compresión de archivos"],
+                correcta: 1,
+                explicacion: "Transformaciones incluyen limpieza, validación, estandarización, cálculos."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Cuál es el método para detectar valores faltantes en Pandas?",
+                opciones: ["df.null()", "df.isnull()", "df.missing()", "df.empty()"],
+                correcta: 1,
+                explicacion: "isnull() o isna() detectan valores faltantes (NaN)."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Qué método elimina filas con valores nulos?",
+                opciones: ["df.remove_null()", "df.dropna()", "df.drop_null()", "df.filter_null()"],
+                correcta: 1,
+                explicacion: "dropna() elimina filas con valores NaN."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Cuál es el método para llenar valores nulos con un valor específico?",
+                opciones: ["df.fill_null()", "df.fillna()", "df.replace_null()", "df.impute()"],
+                correcta: 1,
+                explicacion: "fillna() reemplaza valores nulos con un valor especificado."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Qué detecta df.duplicated()?",
+                opciones: ["Archivos duplicados", "Filas duplicadas en el DataFrame", "Columnas duplicadas", "Índices duplicados"],
+                correcta: 1,
+                explicacion: "duplicated() identifica filas que se repiten en el DataFrame."
+            },
+            {
+                categoria: "Pipelines",
+                pregunta: "¿Cuál es el método para eliminar duplicados?",
+                opciones: ["df.remove_duplicates()", "df.drop_duplicates()", "df.unique()", "df.dedupe()"],
+                correcta: 1,
+                explicacion: "drop_duplicates() elimina filas duplicadas del DataFrame."
+            },
+
+            // COMPILACIÓN DE PYTHON
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Qué es CPython?",
+                opciones: ["Un lenguaje de programación", "La implementación oficial de Python escrita en C", "Un compilador de Python", "Un tipo de dato"],
+                correcta: 1,
+                explicacion: "CPython es la implementación estándar de Python, escrita en C."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Qué es el bytecode en Python?",
+                opciones: ["Código fuente sin compilar", "Código intermedio compilado por la máquina virtual", "Código en binario ejecutable", "Código fuente comentado"],
+                correcta: 1,
+                explicacion: "Bytecode es código intermedio (.pyc) que ejecuta la VM de Python."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Dónde se almacenan los archivos .pyc?",
+                opciones: ["En el directorio raíz", "En el directorio __pycache__", "En el disco SSD", "En memoria RAM"],
+                correcta: 1,
+                explicacion: "Los archivos .pyc se guardan en la carpeta __pycache__ del proyecto."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Cuál es el proceso de ejecución de Python?",
+                opciones: ["Compilación a binario → Ejecución", "Interpretación línea por línea", "Compilación a bytecode → Interpretación por VM", "Compilación JIT"],
+                correcta: 2,
+                explicacion: "Python compila a bytecode y luego la máquina virtual lo interpreta."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Qué es la máquina virtual de Python?",
+                opciones: ["Un emulador de hardware", "Un intérprete de bytecode que ejecuta el código", "Un compilador optimizado", "Un sistema operativo"],
+                correcta: 1,
+                explicacion: "La VM de Python interpreta y ejecuta el bytecode compilado."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Cuál es una ventaja de compilar a bytecode?",
+                opciones: ["Mayor velocidad de ejecución", "Portabilidad entre plataformas", "Menor tamaño de archivo", "Mejor seguridad"],
+                correcta: 1,
+                explicacion: "El bytecode es portable, se ejecuta en cualquier SO con Python instalado."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Qué es el GIL en Python?",
+                opciones: ["Una librería de interfaz gráfica", "Global Interpreter Lock que previene multithreading real", "Una herramienta de depuración", "Un gestor de memoria"],
+                correcta: 1,
+                explicacion: "GIL (Global Interpreter Lock) es un mecanismo que limita ejecución paralela."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Cómo se puede evitar el impacto del GIL?",
+                opciones: ["Usar threads en lugar de procesos", "Usar multiprocessing en lugar de threading", "Usar loops infinitos", "No se puede evitar"],
+                correcta: 1,
+                explicacion: "multiprocessing crea procesos separados evitando el GIL."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Cuál es el MRO en Python?",
+                opciones: ["Maximum Runtime Optimization", "Method Resolution Order para herencia", "Memory Resource Optimizer", "Module Read Only"],
+                correcta: 1,
+                explicacion: "MRO define el orden de búsqueda de métodos en jerarquía de clases."
+            },
+            {
+                categoria: "Compilación Python",
+                pregunta: "¿Cómo se obtiene el MRO de una clase?",
+                opciones: ["class.__mro__", "class.mro()", "Ambas opciones", "class.__method_resolution__"],
+                correcta: 2,
+                explicacion: "Ambas ClassName.__mro__ y ClassName.mro() retornan el MRO."
+            },
+
+            // OPTIMIZACIÓN
+            {
+                categoria: "Optimización",
+                pregunta: "¿Cuál es más eficiente con DataFrames grandes?",
+                opciones: ["Loops con iterrows()", "Vectorización con Pandas", "Ambas igual", "Loops con for tradicional"],
+                correcta: 1,
+                explicacion: "Vectorización es mucho más rápida que loops iterativos en Pandas."
+            },
+            {
+                categoria: "Optimización",
+                pregunta: "¿Qué método itera sobre filas en Pandas?",
+                opciones: ["df.loop()", "df.iterate()", "df.iterrows()", "df.rows()"],
+                correcta: 2,
+                explicacion: "iterrows() itera sobre filas pero es más lento que vectorización."
+            },
+            {
+                categoria: "Optimización",
+                pregunta: "¿Cuál es una ventaja de usar dtypes específicos?",
+                opciones: ["Código más rápido", "Menor consumo de memoria", "Mejor legibilidad", "Ambas b y c"],
+                correcta: 1,
+                explicacion: "Especificar dtypes (int32 vs int64) reduce consumo de memoria significativamente."
+            },
+            {
+                categoria: "Optimización",
+                pregunta: "¿Cómo se especifican tipos de datos al leer CSV?",
+                opciones: ["pd.read_csv(file, type={'col': 'int32'})", "pd.read_csv(file, dtype={'col': 'int32'})", "pd.read_csv(file, dtypes=[...])", "pd.read_csv(file, astype={...})"],
+                correcta: 1,
+                explicacion: "El parámetro dtype especifica tipos al leer: pd.read_csv(..., dtype=...)"
+            },
+            {
+                categoria: "Optimización",
+                pregunta: "¿Qué es la categorización en Pandas?",
+                opciones: ["Agrupar datos", "Convertir texto a tipo 'category' para reducir memoria", "Clasificar automáticamente", "Etiquetar columnas"],
+                correcta: 1,
+                explicacion: "category es un dtype que reduce memoria para datos con pocos valores únicos."
+            },
+            {
+                categoria: "Optimización",
+                pregunta: "¿Cuál es una técnica para paralelizar operaciones en Pandas?",
+                opciones: ["Usar apply() con 'parallel'=True", "Usar Dask DataFrame", "Usar threads de Python", "apply() está optimizado automáticamente"],
+                correcta: 1,
+                explicacion: "Dask permite paralelización distribuida de operaciones Pandas."
+            }
+        ];
+
+        let indiceActual = 0;
+        let respuestas = new Array(preguntas.length).fill(null);
+        let pantallaActual = 'inicio';
+
+        function iniciarQuiz() {
+            pantallaActual = 'quiz';
+            actualizarPantalla();
+            mostrarPregunta();
+        }
+
+        function actualizarPantalla() {
+            document.querySelectorAll('.start-screen, .quiz-screen, .results-screen').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            if (pantallaActual === 'inicio') {
+                document.querySelector('.start-screen').classList.add('active');
+            } else if (pantallaActual === 'quiz') {
+                document.querySelector('.quiz-screen').classList.add('active');
+            } else if (pantallaActual === 'resultados') {
+                document.querySelector('.results-screen').classList.add('active');
+            }
+        }
+
+        function mostrarPregunta() {
+            const pregunta = preguntas[indiceActual];
+
+            document.getElementById('categoryBadge').textContent = pregunta.categoria;
+            document.getElementById('questionNumber').textContent = `Pregunta ${indiceActual + 1} de ${preguntas.length}`;
+            document.getElementById('questionText').textContent = pregunta.pregunta;
+
+            const codeBlock = document.getElementById('codeBlock');
+            if (pregunta.codigo) {
+                codeBlock.innerHTML = `<div class="code-block">${pregunta.codigo}</div>`;
+            } else {
+                codeBlock.innerHTML = '';
+            }
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            pregunta.opciones.forEach((opcion, idx) => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                if (respuestas[indiceActual] === idx) div.classList.add('selected');
+
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'option';
+                input.value = idx;
+                input.checked = respuestas[indiceActual] === idx;
+                input.onchange = () => {
+                    respuestas[indiceActual] = idx;
+                    document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                    div.classList.add('selected');
+                };
+
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(opcion));
+                div.appendChild(label);
+                container.appendChild(div);
+            });
+
+            document.getElementById('prevBtn').disabled = indiceActual === 0;
+            document.getElementById('nextBtn').textContent = indiceActual === preguntas.length - 1 ? 'Finalizar' : 'Siguiente →';
+
+            const progreso = ((indiceActual + 1) / preguntas.length) * 100;
+            document.getElementById('progressFill').style.width = progreso + '%';
+        }
+
+        function siguientePregunta() {
+            if (indiceActual < preguntas.length - 1) {
+                indiceActual++;
+                mostrarPregunta();
+            } else {
+                finalizarQuiz();
+            }
+        }
+
+        function preguntaAnterior() {
+            if (indiceActual > 0) {
+                indiceActual--;
+                mostrarPregunta();
+            }
+        }
+
+        function finalizarQuiz() {
+            let correctas = 0;
+            let incorrectas = 0;
+            let sinResponder = 0;
+
+            respuestas.forEach((resp, idx) => {
+                if (resp === null) {
+                    sinResponder++;
+                } else if (resp === preguntas[idx].correcta) {
+                    correctas++;
+                } else {
+                    incorrectas++;
+                }
+            });
+
+            const porcentaje = Math.round((correctas / preguntas.length) * 100);
+
+            document.getElementById('finalScore').textContent = porcentaje + '%';
+            document.getElementById('correctCount').textContent = correctas;
+            document.getElementById('incorrectCount').textContent = incorrectas;
+            document.getElementById('unansweredCount').textContent = sinResponder;
+            document.getElementById('totalQuestions').textContent = preguntas.length;
+
+            let feedback = '';
+            let cssClass = '';
+
+            if (porcentaje >= 70) {
+                feedback = '✓ APROBADO - Ve a descansar y repasa mañana a nivel práctico. Necesitas consolidar con ejercicios reales.';
+                cssClass = 'success';
+            } else if (porcentaje >= 60) {
+                feedback = '⚠ CASI - Necesitas 70% para descansar. Revisa los temas débiles y reintenta.';
+                cssClass = 'warning';
+            } else {
+                feedback = '✗ NO APROBADO - Repasa la teoría antes de intentar prácticas.';
+                cssClass = 'error';
+            }
+
+            const div = document.getElementById('resultFeedback');
+            div.innerHTML = feedback;
+            div.className = 'feedback ' + cssClass;
+
+            pantallaActual = 'resultados';
+            actualizarPantalla();
+        }
+
+        function reiniciarQuiz() {
+            indiceActual = 0;
+            respuestas = new Array(preguntas.length).fill(null);
+            pantallaActual = 'inicio';
+            actualizarPantalla();
+        }
+    </script>
+</body>
+</html>
